@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High Quality Image Resizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+        }
+
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background-color: #f0f8ff;
+            border-color: #2980b9;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .drop-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .editor-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .preview-section {
+            flex: 1;
+        }
+
+        .controls-section {
+            flex: 1;
+            max-width: 350px;
+        }
+
+        .image-container {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #imageCanvas {
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            -ms-interpolation-mode: nearest-neighbor;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .form-group input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .form-group input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+        }
+
+        .quality-group {
+            margin-top: 15px;
+        }
+
+        .quality-group input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+        }
+
+        .quality-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+
+        #qualityValue {
+            display: inline-block;
+            width: 30px;
+            text-align: right;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+        .download-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+
+        .download-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .dimensions-info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .dimensions-info span {
+            font-weight: bold;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .editor-container {
+                flex-direction: column;
+            }
+            
+            .controls-section {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>High Quality Image Resizer</h1>
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="fileInput" accept="image/*">
+            <label for="fileInput" class="upload-label">
+                <span class="drop-icon">📁</span>
+                <p>Drag & drop your image here or click to browse</p>
+                <p class="dimensions-info">Supports: PNG, JPEG, WebP, BMP</p>
+            </label>
+        </div>
+        
+        <div class="editor-container" id="editorContainer" style="display: none;">
+            <div class="preview-section">
+                <h2>Preview</h2>
+                <div class="image-container">
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="spinner"></div>
+                    </div>
+                    <canvas id="imageCanvas"></canvas>
+                </div>
+                <p class="dimensions-info">Original Dimensions: <span id="originalDimensions"></span></p>
+                <p class="dimensions-info">New Dimensions: <span id="newDimensions"></span></p>
+            </div>
+            
+            <div class="controls-section">
+                <h2>Resize Options</h2>
+                
+                <div class="form-group">
+                    <label>Resize Method:</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="aspectRatioRadio" name="resizeMethod" value="aspect" checked>
+                            <label for="aspectRatioRadio">Maintain Aspect Ratio</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="customSizeRadio" name="resizeMethod" value="custom">
+                            <label for="customSizeRadio">Custom Size</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="widthInput">Width (px):</label>
+                    <input type="number" id="widthInput" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="heightInput">Height (px):</label>
+                    <input type="number" id="heightInput" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="resizeAlgorithm">Resize Algorithm:</label>
+                    <select id="resizeAlgorithm">
+                        <option value="highQuality">High Quality (slower)</option>
+                        <option value="balanced">Balanced</option>
+                        <option value="fast">Fast (lower quality)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formatSelect">Output Format:</label>
+                    <select id="formatSelect">
+                        <option value="png">PNG (Lossless)</option>
+                        <option value="jpeg">JPEG (Lossy)</option>
+                        <option value="webp">WebP (Better Quality)</option>
+                        <option value="bmp">BMP (Uncompressed)</option>
+                    </select>
+                </div>
+                
+                <div class="quality-group" id="qualityGroup">
+                    <label for="qualityInput">Quality: <span id="qualityValue">92</span></label>
+                    <input type="range" id="qualityInput" min="10" max="100" value="92" step="1">
+                    <div class="quality-labels">
+                        <span>Smaller File</span>
+                        <span style="float: right;">Better Quality</span>
+                    </div>
+                </div>
+                
+                <button id="downloadBtn" class="download-btn">Download High Quality Image</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadArea = document.getElementById('uploadArea');
+            const editorContainer = document.getElementById('editorContainer');
+            const imageCanvas = document.getElementById('imageCanvas');
+            const ctx = imageCanvas.getContext('2d', { willReadFrequently: true });
+            const widthInput = document.getElementById('widthInput');
+            const heightInput = document.getElementById('heightInput');
+            const aspectRatioRadio = document.getElementById('aspectRatioRadio');
+            const customSizeRadio = document.getElementById('customSizeRadio');
+            const formatSelect = document.getElementById('formatSelect');
+            const qualityInput = document.getElementById('qualityInput');
+            const qualityValue = document.getElementById('qualityValue');
+            const qualityGroup = document.getElementById('qualityGroup');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const originalDimensions = document.getElementById('originalDimensions');
+            const newDimensions = document.getElementById('newDimensions');
+            const resizeAlgorithm = document.getElementById('resizeAlgorithm');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            let originalImage = null;
+            let originalWidth = 0;
+            let originalHeight = 0;
+            let aspectRatio = 1;
+            let isMaintainingAspectRatio = true;
+            
+            // Initialize with WebP quality options shown
+            updateQualityVisibility();
+            
+            // Handle drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f0f8ff';
+                uploadArea.style.borderColor = '#2980b9';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.backgroundColor = '';
+                uploadArea.style.borderColor = '#3498db';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                uploadArea.style.borderColor = '#3498db';
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileUpload(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // Handle file selection
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+            
+            // Handle resize method change
+            aspectRatioRadio.addEventListener('change', () => {
+                isMaintainingAspectRatio = true;
+                if (originalImage) {
+                    heightInput.value = Math.round(widthInput.value / aspectRatio);
+                    drawImageWithQuality();
+                }
+            });
+            
+            customSizeRadio.addEventListener('change', () => {
+                isMaintainingAspectRatio = false;
+                if (originalImage) {
+                    drawImageWithQuality();
+                }
+            });
+            
+            // Handle resizing inputs
+            widthInput.addEventListener('input', handleResize);
+            heightInput.addEventListener('input', handleResize);
+            
+            // Handle format change
+            formatSelect.addEventListener('change', updateQualityVisibility);
+            
+            function updateQualityVisibility() {
+                if (formatSelect.value === 'jpeg' || formatSelect.value === 'webp') {
+                    qualityGroup.style.display = 'block';
+                } else {
+                    qualityGroup.style.display = 'none';
+                }
+            }
+            
+            // Handle quality input
+            qualityInput.addEventListener('input', () => {
+                qualityValue.textContent = qualityInput.value;
+                if (originalImage) {
+                    drawImageWithQuality();
+                }
+            });
+            
+            // Handle algorithm change
+            resizeAlgorithm.addEventListener('change', () => {
+                if (originalImage) {
+                    drawImageWithQuality();
+                }
+            });
+            
+            // Handle download
+            downloadBtn.addEventListener('click', downloadImage);
+            
+            function handleFileUpload(file) {
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file (PNG, JPEG, WebP, BMP).');
+                    return;
+                }
+                
+                showLoading(true);
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalImage = new Image();
+                    originalImage.onload = function() {
+                        originalWidth = originalImage.width;
+                        originalHeight = originalImage.height;
+                        aspectRatio = originalWidth / originalHeight;
+                        
+                        originalDimensions.textContent = `${originalWidth} × ${originalHeight}`;
+                        updateNewDimensions(originalWidth, originalHeight);
+                        
+                        widthInput.value = originalWidth;
+                        heightInput.value = originalHeight;
+                        
+                        editorContainer.style.display = 'flex';
+                        uploadArea.style.display = 'none';
+                        
+                        drawImageWithQuality();
+                        showLoading(false);
+                    };
+                    originalImage.onerror = function() {
+                        alert('Error loading image. Please try another file.');
+                        showLoading(false);
+                    };
+                    originalImage.src = e.target.result;
+                };
+                reader.onerror = function() {
+                    alert('Error reading file. Please try again.');
+                    showLoading(false);
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function drawImageWithQuality() {
+                const width = parseInt(widthInput.value) || originalWidth;
+                const height = parseInt(heightInput.value) || originalHeight;
+                
+                updateNewDimensions(width, height);
+                showLoading(true);
+                
+                // Use setTimeout to allow UI to update before heavy computation
+                setTimeout(() => {
+                    imageCanvas.width = width;
+                    imageCanvas.height = height;
+                    
+                    // Apply different resizing algorithms based on selection
+                    const algorithm = resizeAlgorithm.value;
+                    
+                    if (algorithm === 'highQuality') {
+                        // High quality but slower resizing
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    } 
+                    else if (algorithm === 'balanced') {
+                        // Balanced approach
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'medium';
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    }
+                    else {
+                        // Fast but lower quality
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(originalImage, 0, 0, width, height);
+                    }
+                    
+                    showLoading(false);
+                }, 50);
+            }
+            
+            function handleResize(e) {
+                if (!originalImage) return;
+                
+                if (isMaintainingAspectRatio) {
+                    if (e.target.id === 'widthInput') {
+                        const newWidth = parseInt(e.target.value) || originalWidth;
+                        heightInput.value = Math.round(newWidth / aspectRatio);
+                    } else if (e.target.id === 'heightInput') {
+                        const newHeight = parseInt(e.target.value) || originalHeight;
+                        widthInput.value = Math.round(newHeight * aspectRatio);
+                    }
+                }
+                
+                drawImageWithQuality();
+            }
+            
+            function downloadImage() {
+                if (!originalImage) return;
+                
+                showLoading(true);
+                
+                setTimeout(() => {
+                    const format = formatSelect.value;
+                    let mimeType, extension;
+                    
+                    switch (format) {
+                        case 'jpeg':
+                            mimeType = 'image/jpeg';
+                            extension = 'jpg';
+                            break;
+                        case 'png':
+                            mimeType = 'image/png';
+                            extension = 'png';
+                            break;
+                        case 'webp':
+                            mimeType = 'image/webp';
+                            extension = 'webp';
+                            break;
+                        case 'bmp':
+                            mimeType = 'image/bmp';
+                            extension = 'bmp';
+                            break;
+                        default:
+                            mimeType = 'image/png';
+                            extension = 'png';
+                    }
+                    
+                    let quality = 1;
+                    if (format === 'jpeg' || format === 'webp') {
+                        quality = parseInt(qualityInput.value) / 100;
+                    }
+                    
+                    // For PNG, we can create a higher quality version
+                    if (format === 'png') {
+                        // Create a temporary canvas with the original dimensions
+                        const tempCanvas = document.createElement('canvas');
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCanvas.width = originalImage.width;
+                        tempCanvas.height = originalImage.height;
+                        tempCtx.drawImage(originalImage, 0, 0);
+                        
+                        // Resize to target dimensions with high quality
+                        const targetCanvas = document.createElement('canvas');
+                        const targetCtx = targetCanvas.getContext('2d');
+                        const targetWidth = parseInt(widthInput.value) || originalWidth;
+                        const targetHeight = parseInt(heightInput.value) || originalHeight;
+                        targetCanvas.width = targetWidth;
+                        targetCanvas.height = targetHeight;
+                        
+                        targetCtx.imageSmoothingEnabled = true;
+                        targetCtx.imageSmoothingQuality = 'high';
+                        targetCtx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+                        
+                        const dataUrl = targetCanvas.toDataURL(mimeType);
+                        triggerDownload(dataUrl, extension);
+                    } else {
+                        const dataUrl = imageCanvas.toDataURL(mimeType, quality);
+                        triggerDownload(dataUrl, extension);
+                    }
+                    
+                    showLoading(false);
+                }, 100);
+            }
+            
+            function triggerDownload(dataUrl, extension) {
+                const link = document.createElement('a');
+                link.download = `high-quality-image.${extension}`;
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            function updateNewDimensions(width, height) {
+                newDimensions.textContent = `${width} × ${height}`;
+            }
+            
+            function showLoading(show) {
+                loadingOverlay.style.display = show ? 'flex' : 'none';
+                downloadBtn.disabled = show;
+            }
+        });
+    </script>
+</body>
+</html>
