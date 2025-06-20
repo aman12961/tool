@@ -306,13 +306,65 @@
                 <span class="logo-icon">🖼️</span>
                 <span>ImageResizer Pro</span>
             </a>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="features.html">Features</a></li>
-                <li><a href="resizer.html">Resizer Tool</a></li>
-                <li><a href="about.html">About</a></li>
-                <li><a href="resizer.html" class="cta-button">Resize Now</a></li>
-            </ul>
+           <ul class="nav-links">
+    <li><a href="index.html" class="nav-link">Home</a></li>
+    <li><a href="features.html" class="nav-link">Features</a></li>
+    <li><a href="resizer.html" class="nav-link">Resizer Tool</a></li>
+    <li><a href="/tool/about.html" class="nav-link">About</a></li>
+    <li><a href="resizer.html?preset=quickstart" class="cta-button">Resize Now</a></li>
+</ul>
+
+<style>
+    .nav-links {
+        display: flex;
+        list-style: none;
+        gap: 1.5rem;
+    }
+    
+    .nav-link {
+        text-decoration: none;
+        color: var(--dark-color);
+        font-weight: 500;
+        transition: all 0.3s ease;
+        padding: 0.5rem 0;
+        position: relative;
+    }
+    
+    .nav-link:hover {
+        color: var(--primary-color);
+    }
+    
+    .nav-link::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background-color: var(--primary-color);
+        transition: width 0.3s ease;
+    }
+    
+    .nav-link:hover::after {
+        width: 100%;
+    }
+    
+    .cta-button {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .cta-button:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
         </nav>
     </header>
 
